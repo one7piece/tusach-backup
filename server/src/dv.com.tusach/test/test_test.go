@@ -2,7 +2,9 @@ package test
 
 import (
 	"fmt"
+	"log"
 	"reflect"
+	//"strconv"
 	"testing"
 	"time"
 )
@@ -14,6 +16,43 @@ type User struct {
 	Role       string
 	Password   string
 	UpdateTime time.Time
+}
+
+func TestRegexp(t *testing.T) {
+	str := "aaaaa\n<dc:title>mytitle</dc:title>\nbbbbb"
+	re := "<dc:title>*+</dc:title>"
+}
+
+func xTestGoRoutine(t *testing.T) {
+	c := make(chan string)
+	go f(c, "1")
+	log.Printf("Sending message: %s\n", "Hello")
+	c <- "Hello"
+	log.Printf("Closing channel\n")
+	close(c)
+	log.Printf("Closed channel\n")
+	/*
+		for i := 0; i < 3; i++ {
+			msg := "Hello" + strconv.Itoa(i)
+			log.Printf("Sending message: %s\n", msg)
+			c <- msg
+			time.Sleep(5 * time.Second)
+		}
+		close(c)
+	*/
+	time.Sleep(10 * time.Second)
+}
+
+func f(c chan string, id string) {
+	log.Printf("%s - start monitoring channel...\n", id)
+	for {
+		msg, more := <-c
+		log.Printf("%s - received message: %s, more:%b\n", id, msg, more)
+		if msg == "done" || !more {
+			break
+		}
+	}
+	log.Printf("%s - end monitoring channel.\n", id)
 }
 
 func TestReflect(t *testing.T) {

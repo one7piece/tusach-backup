@@ -1,0 +1,2 @@
+serviceClass: com.dv.gtusach.client.BookService
+path: 8BE7491E4A276D2CF1A3E9FEA27B345B.gwt.rpc

@@ -2,6 +2,8 @@ package main
 
 import (
 	"dv.com.tusach/maker"
+	"dv.com.tusach/util"
+	"errors"
 	"flag"
 	"github.com/ant0ine/go-json-rest/rest"
 	"log"
@@ -15,6 +17,7 @@ var systemInfo maker.SystemInfo
 var users []maker.User
 var books []maker.Book
 var scripts []maker.ParserScript
+var channels map[int]chan string
 
 func main() {
 	loadData()
@@ -23,6 +26,9 @@ func main() {
 		":" + strconv.Itoa(maker.GetConfiguration().ServerBindPort) +
 		", server path: " + maker.GetConfiguration().ServerPath)
 
+	// create channels map
+	channels = make(map[int]chan string)
+
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
@@ -30,6 +36,7 @@ func main() {
 		&rest.Route{"GET", "/books", GetBooks},
 		&rest.Route{"GET", "/book/:id", GetBook},
 		&rest.Route{"POST", "/book", CreateBook},
+		&rest.Route{"PUT", "/book:cmd", UpdateBook},
 	)
 	if err != nil {
 		log.Fatal("GOWebServer - ERROR! ", err)
@@ -79,6 +86,67 @@ func GetBook(w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(result)
 }
 
+func UpdateBook(w rest.ResponseWriter, r *rest.Request) {
+	op := r.PathParam("op")
+	log.Printf("UpdateBook: %s", op)
+	if op != "abort" && op != "resume" && op != "update" && op != "delete" {
+		rest.Error(w, "Invalid op value: "+op, 400)
+		return
+	}
+	updateBook := maker.Book{}
+	err := r.DecodeJsonPayload(&updateBook)
+	if err != nil {
+		rest.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	currentBook, err := maker.LoadBook(updateBook.ID)
+	if err != nil {
+		rest.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	c, present := channels[updateBook.ID]
+	if present {
+		// can only abort
+		if op == "abort" {
+			c <- "abort"
+		} else {
+			err = errors.New("Book is currently in progress.")
+		}
+	} else {
+		switch op {
+		case "update":
+			_, err = maker.SaveBook(updateBook)
+
+		case "resume":
+			currentBook.Status = maker.STATUS_WORKING
+			bookId, err := maker.SaveBook(currentBook)
+			if err == nil {
+				// find parser
+				parser := maker.GetParserName(currentBook.CurrentPageUrl)
+				if parser == "" {
+					err = errors.New("No parser found for url: " + currentBook.CurrentPageUrl)
+				} else {
+					// schedule goroutine to create book
+					c := make(chan string)
+					channels[currentBook.ID] = c
+					go maker.CreateBook(c, currentBook, parser)
+				}
+			}
+
+		case "delete":
+			maker.DeleteBook(updateBook.ID)
+		}
+	}
+
+	message := "OK"
+	if err != nil {
+		message = "ERROR: " + err.Error()
+	}
+
+	w.WriteJson()
+}
+
 func CreateBook(w rest.ResponseWriter, r *rest.Request) {
 	newBook := maker.Book{}
 	err := r.DecodeJsonPayload(&newBook)
@@ -97,15 +165,36 @@ func CreateBook(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 
+	// prevent too many concurrent books creation
+	numActive := 0
+	for _, book := range books {
+		if book.Status == maker.STATUS_WORKING {
+			numActive++
+		}
+	}
+	if numActive >= maker.GetConfiguration().MaxActionBooks {
+		rest.Error(w, "Too many concurrent books in progress", 400)
+		return
+	}
+
+	parser := GetParserName(book.StartPageUrl)
+	if parser == "" {
+		rest.Error(w, "No parser found for url: "+book.StartPageUrl, 400)
+		return
+	}
+
+	newBook.Status = maker.STATUS_WORKING
 	bookId, err := maker.SaveBook(newBook)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	newBook.ID = bookId
 
-	// schedule
+	// schedule goroutine to create book
+	c := make(chan string)
+	channels[bookId] = c
+	go maker.CreateBook(c, newBook, parser)
 
 	w.WriteJson(newBook)
 }
@@ -122,7 +211,7 @@ func loadData() {
 	now := time.Now()
 
 	// load configuration
-	maker.LoadConfig(configFile)
+	util.LoadConfig(configFile)
 
 	// init system info
 	systemInfo = maker.SystemInfo{SystemUpTime: now, BookLastUpdateTime: now, ParserEditing: false}

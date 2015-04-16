@@ -1,0 +1,4 @@
+server/pkg/*
+server/library/books
+server/library/parser
+

@@ -2,14 +2,15 @@ package maker
 
 import (
 	"database/sql"
+	"dv.com.tusach/util"
 	"errors"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -17,14 +18,13 @@ import (
 )
 
 var db *sql.DB
-var libraryPath string
 
 func initDB() {
 	db = nil
-	log.Printf("opening database...\n")
-	_db, err := sql.Open("sqlite3", configuration.DBFilename)
+	log.Printf("opening database %s\n", util.GetConfiguration().DBFilename)
+	_db, err := sql.Open("sqlite3", util.GetConfiguration().DBFilename)
 	if err != nil {
-		log.Fatal("failed to open databse: " + configuration.DBFilename)
+		log.Fatal("failed to open databse: " + util.GetConfiguration().DBFilename)
 		panic(err)
 	}
 	db = _db
@@ -34,8 +34,6 @@ func initDB() {
 	createTable("user", reflect.TypeOf(User{}))
 	createTable("book", reflect.TypeOf(Book{}))
 	createTable("chapter", reflect.TypeOf(Chapter{}))
-
-	libraryPath = configuration.ServerPath + "/library"
 }
 
 func closeDB() {
@@ -73,14 +71,6 @@ func createTable(tableName string, tableType reflect.Type) {
 	if err != nil {
 		log.Printf("failed to create table: %s\n", err)
 	}
-}
-
-func getBookPath(bookId int) string {
-	return libraryPath + "/books/" + fmt.Sprintf("%08d", bookId)
-}
-
-func getChapterFilename(chapter Chapter) string {
-	return libraryPath + "/books/" + fmt.Sprintf("%08d/OEBPS/chapter%04d.html", chapter.BookId, chapter.ChapterNo)
 }
 
 func LoadSystemInfo() (SystemInfo, error) {
@@ -189,15 +179,18 @@ func SaveBook(book Book) (retId int, retErr error) {
 			if newBookId > 0 {
 				DeleteBook(newBookId)
 			}
-			// find out what exactly is err
-			switch x := err.(type) {
-			case string:
-				retErr = errors.New(x)
-			case error:
-				retErr = x
-			default:
-				retErr = errors.New("Unknow panic")
-			}
+			retErr = util.ExtractError(err)
+			/*
+				// find out what exactly is err
+				switch x := err.(type) {
+				case string:
+					retErr = errors.New(x)
+				case error:
+					retErr = x
+				default:
+					retErr = errors.New("Unknow panic")
+				}
+			*/
 			retId = 0
 		}
 	}()
@@ -226,21 +219,21 @@ func SaveBook(book Book) (retId int, retErr error) {
 		retErr = insertRecord("book", reflect.ValueOf(book))
 		if retErr == nil {
 			// create book dir
-			dirPath := getBookPath(book.ID)
+			dirPath := util.GetBookPath(book.ID)
 			log.Println("Creating book dir: ", dirPath)
 			os.MkdirAll(dirPath, 0777)
 			if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 				panic("Error creating directory: " + dirPath)
 			}
-			files, err := ioutil.ReadDir(libraryPath + "/epub")
+			files, err := ioutil.ReadDir(util.GetEpubPath())
 			if err != nil {
-				panic("Error reading directory: " + libraryPath + "/epub" + ". " + err.Error())
+				panic("Error reading directory: " + util.GetEpubPath() + ". " + err.Error())
 			}
 			for _, file := range files {
-				cmd := exec.Command("cp", "-rf", libraryPath+"/epub/"+file.Name(), dirPath)
+				cmd := exec.Command("cp", "-rf", util.GetEpubPath()+"/"+file.Name(), dirPath)
 				out, retErr := cmd.CombinedOutput()
 				if retErr != nil {
-					panic("Error copying epub template file: " + libraryPath + "/epub/" + file.Name() + ". " + string(out))
+					panic("Error copying epub template file: " + util.GetEpubPath() + "/" + file.Name() + ". " + string(out))
 				}
 			}
 		}
@@ -269,7 +262,7 @@ func DeleteBook(bookId int) error {
 	err = deleteRecords("book", "ID=?", args)
 
 	// remove files
-	err = os.RemoveAll(getBookPath(bookId))
+	err = os.RemoveAll(util.GetBookPath(bookId))
 
 	return err
 }
@@ -295,6 +288,9 @@ func LoadChapters(bookId int) ([]Chapter, error) {
 	}
 	if len(chapters) == 0 {
 		log.Printf("No chapter found\n")
+	} else {
+		// sort chapters by ChapterNo
+		sort.Sort(ByChapterNo(chapters))
 	}
 
 	// TODO verify chapter html/images from file system
@@ -303,17 +299,14 @@ func LoadChapters(bookId int) ([]Chapter, error) {
 }
 
 func SaveChapter(chapter Chapter) error {
-	// write html files
-	if len(chapter.Html) == 0 {
-		return errors.New("Missing html in chapter object")
-	}
-	filepath := getChapterFilename(chapter)
-	err := ioutil.WriteFile(filepath, chapter.Html, 0777)
-	if err != nil {
-		log.Println("error writing chapter file: ", filepath, err)
-		return err
-	}
-
+	/*
+		filepath := util.GetChapterFilename(chapter.BookId, chapter.ChapterNo)
+		err := ioutil.WriteFile(filepath, chapter.Html, 0777)
+		if err != nil {
+			log.Println("error writing chapter file: ", filepath, err)
+			return err
+		}
+	*/
 	args := []interface{}{chapter.BookId, chapter.ChapterNo}
 	records, err := loadRecords(reflect.TypeOf(Chapter{}), "chapter", "BookId=? and ChapterNo=?", args)
 	if err != nil {

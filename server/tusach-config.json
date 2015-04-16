@@ -1,4 +1,5 @@
 {
-	"serverPath": "/home/dvan/vshared/dev/tusach/webserver",
-	"dbFilename": "/home/dvan/vshared/dev/tusach/webserver/tusach.db"	
+	"serverPath": "/home/dvan/vshared/dv/tusach/server/webserver",
+	"libraryPath": "/home/dvan/vshared/dv/tusach/server/library",
+	"dbFilename": "/home/dvan/vshared/dv/tusach/server/library/tusach.db"	
 }
