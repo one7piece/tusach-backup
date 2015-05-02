@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	//"golang.org/x/net/html"
+	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -43,10 +45,16 @@ func main() {
 }
 
 func Validate(url string) (string, error) {
+	validated := 0
 	if strings.Contains(url, "tangthuvien") {
-		return "\n***validated=true", nil
+		validated = 1
 	}
-	return "\n***validated=false", nil
+
+	m := map[string]string{"validated": strconv.Itoa(validated)}
+	m["batchSize"] = "50"
+	m["batchDelaySec"] = "10"
+	json, _ := json.Marshal(m)
+	return "\nparser-output:" + string(json) + "\n", nil
 }
 
 func Parse(inputFile string, outputFile string) (string, error) {
@@ -72,9 +80,9 @@ func Parse(inputFile string, outputFile string) (string, error) {
 		return "", errors.New("Error writing to file: " + outputFile + ". " + err.Error())
 	}
 
-	str := fmt.Sprintf("\n***chapterTitle=%s\n***nextPageUrl=%s\n", chapterTitle, nextPageUrl)
-
-	return str, nil
+	m := map[string]string{"chapterTitle": chapterTitle, "nextPageUrl": nextPageUrl}
+	json, _ := json.Marshal(m)
+	return "\nparser-output:" + string(json) + "\n", nil
 }
 
 func getChapterHtml(rawHtml string, chapterTitle *string) (string, error) {

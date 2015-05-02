@@ -19,7 +19,7 @@ import (
 
 var db *sql.DB
 
-func initDB() {
+func InitDB() {
 	db = nil
 	log.Printf("opening database %s\n", util.GetConfiguration().DBFilename)
 	_db, err := sql.Open("sqlite3", util.GetConfiguration().DBFilename)
@@ -36,7 +36,7 @@ func initDB() {
 	createTable("chapter", reflect.TypeOf(Chapter{}))
 }
 
-func closeDB() {
+func CloseDB() {
 	if db != nil {
 		db.Close()
 	}

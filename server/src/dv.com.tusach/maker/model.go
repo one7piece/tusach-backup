@@ -5,16 +5,17 @@ import (
 )
 
 type SystemInfo struct {
-	SystemUpTime       time.Time
-	BookLastUpdateTime time.Time
-	ParserEditing      bool
+	SystemUpTime       time.Time `json:"systemUpTime"`
+	BookLastUpdateTime time.Time `json:"bookLastUpdateTime"`
+	ParserEditing      bool      `json:"parserEditing"`
 }
 
 type User struct {
-	Name          string
-	Role          string
-	Password      string
-	LastLoginTime time.Time
+	Name          string    `json:"name"`
+	Role          string    `json:"role"`
+	Password      string    `json:"password"`
+	LastLoginTime time.Time `json:"lastLoginTime"`
+	SessionId     string    `json:"sessionId" persist:"false"`
 }
 
 type ParserScript struct {
@@ -30,20 +31,20 @@ const STATUS_ERROR = "ERROR"
 const STATUS_ABORTED = "ABORTED"
 
 type Book struct {
-	ID             int
-	Title          string
-	Author         string
-	CreatedTime    time.Time
-	CreatedBy      string
-	Status         string
-	BuildTimeSec   int
-	StartPageUrl   string
-	CurrentPageUrl string
-	CurrentPageNo  int
-	MaxNumPages    int
-	LastUpdateTime time.Time
-	ErrorMsg       string
-	EpubCreated    bool
+	ID             int       `json:"id"`
+	Title          string    `json:"title"`
+	Author         string    `json:"author"`
+	CreatedTime    time.Time `json:"createdTime"`
+	CreatedBy      string    `json:"createdBy"`
+	Status         string    `json:"status"`
+	BuildTimeSec   int       `json:"buildTimeSec"`
+	StartPageUrl   string    `json:"startPageUrl"`
+	CurrentPageUrl string    `json:"currentPageUrl"`
+	CurrentPageNo  int       `json:"currentPageNo"`
+	MaxNumPages    int       `json:"maxNumPages"`
+	LastUpdateTime time.Time `json:"lastUpdateTime"`
+	ErrorMsg       string    `json:"errorMsg"`
+	EpubCreated    bool      `json:"epubCreated"`
 }
 
 type Chapter struct {

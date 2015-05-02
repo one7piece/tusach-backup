@@ -5,6 +5,12 @@ import (
 	"log"
 	"reflect"
 	//"strconv"
+	"bytes"
+	"dv.com.tusach/util"
+	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
+	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 )
@@ -18,44 +24,121 @@ type User struct {
 	UpdateTime time.Time
 }
 
-func TestRegexp(t *testing.T) {
-	str := "aaaaa\n<dc:title>mytitle</dc:title>\nbbbbb"
-	re := "<dc:title>*+</dc:title>"
+var mymap map[string]User
+
+func TestGoQuery(t *testing.T) {
+	data, _ := ioutil.ReadFile("/home/dvan/vshared/dv/tusach/server/library/test.html")
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(data)))
+	if err != nil {
+		t.Error("cannot read html file")
+		return
+	}
+
+	var buffer bytes.Buffer
+	doc.Find("div#chapter_content").Each(func(i int, s *goquery.Selection) {
+		html, _ := s.Html()
+		log.Printf("Found chapter content:\n%s\n", html)
+		s.Contents().FilterFunction(func(i int, s *goquery.Selection) {
+						
+		}).Each(func(i int, s *goquery.Selection) {
+			
+		})
+				
+		
+		for _, node := range s.Nodes {
+			extractNodeText(node, buffer)
+		}
+	})
 }
 
-func xTestGoRoutine(t *testing.T) {
+func extractNodeText(node *html.Node, buffer bytes.Buffer) {
+	if node.Type == 3 {
+		node.
+	} else {
+
+	}
+}
+
+func TestWalk(t *testing.T) {
+	names, err := util.ListDir("/home/dvan/vshared/dv", true)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("names-filesonly: %v\n", names)
+	names, err = util.ListDir("/home/dvan/vshared/dv", false)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("names-files-dirs: %v\n", names)
+}
+
+func TestFuncReturn(t *testing.T) {
+	mymap = make(map[string]User)
+	mymap["dung"] = User{Name: "dung", Role: "admin"}
+
+	user := getUser("dung")
+	log.Printf("dung1=%+v\n", user)
+
+	user.Role = "operator"
+	changed_user := getUser("dung")
+	log.Printf("dung2=%+v\n", changed_user)
+
+	user = mymap["dung"]
+	user.Role = "operator"
+	log.Printf("dung3=%+v\n", mymap["dung"])
+}
+
+func getUser(name string) User {
+	return mymap[name]
+}
+
+func TestRegexp(t *testing.T) {
+	//str := "aaaaa\n<dc:title>mytitle</dc:title>\nbbbbb"
+	//re := "<dc:title>*+</dc:title>"
+}
+
+func TestChannel2(t *testing.T) {
 	c := make(chan string)
-	go f(c, "1")
+	for i := 0; i < 5; i++ {
+		go func(i int) {
+			msg := <-c
+			log.Println(msg)
+			c <- msg
+		}(i)
+	}
+
 	log.Printf("Sending message: %s\n", "Hello")
 	c <- "Hello"
+	log.Printf("Sent message: %s\n", <-c)
+
 	log.Printf("Closing channel\n")
 	close(c)
 	log.Printf("Closed channel\n")
-	/*
-		for i := 0; i < 3; i++ {
-			msg := "Hello" + strconv.Itoa(i)
-			log.Printf("Sending message: %s\n", msg)
-			c <- msg
-			time.Sleep(5 * time.Second)
-		}
-		close(c)
-	*/
 	time.Sleep(10 * time.Second)
 }
 
-func f(c chan string, id string) {
-	log.Printf("%s - start monitoring channel...\n", id)
-	for {
-		msg, more := <-c
-		log.Printf("%s - received message: %s, more:%b\n", id, msg, more)
-		if msg == "done" || !more {
-			break
-		}
+func xTestChannel1(t *testing.T) {
+	c := make(chan string)
+
+	for i := 0; i < 2; i++ {
+		go func(i int) {
+			msg := <-c
+			log.Println(msg)
+		}(i)
 	}
-	log.Printf("%s - end monitoring channel.\n", id)
+
+	log.Printf("Sending message: %s\n", "Hello")
+	c <- "Hello"
+	log.Printf("Sent message: %s\n", <-c)
+	time.Sleep(1 * time.Second)
+
+	log.Printf("Closing channel\n")
+	close(c)
+	log.Printf("Closed channel\n")
+	time.Sleep(10 * time.Second)
 }
 
-func TestReflect(t *testing.T) {
+func xTestReflect(t *testing.T) {
 	var x int = 3
 	var y MyInt = 4
 	var z interface{}
@@ -112,7 +195,7 @@ func TestReflect(t *testing.T) {
 	}
 }
 
-func TestFieldConversion(t *testing.T) {
+func xTestFieldConversion(t *testing.T) {
 	user := User{Name: "dvan", Role: "admin", UpdateTime: time.Now()}
 	vo := reflect.ValueOf(user)
 	field, _ := vo.Type().FieldByName("Name")
@@ -165,7 +248,7 @@ func db2field(fieldType reflect.Type, dbValue interface{}) interface{} {
 	return result
 }
 
-func TestDateTime(t *testing.T) {
+func xTestDateTime(t *testing.T) {
 	now := time.Now()
 	str, _ := fromDateTime(now)
 	fmt.Printf("time str: %s\n", str)

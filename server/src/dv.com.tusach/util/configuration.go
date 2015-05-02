@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Configuration struct {
@@ -32,6 +33,10 @@ func GetEpubPath() string {
 
 func GetBookPath(bookId int) string {
 	return configuration.LibraryPath + "/books/" + fmt.Sprintf("%08d", bookId)
+}
+
+func GetBookEpubFilename(bookId int, title string) string {
+	return configuration.LibraryPath + "/books/" + fmt.Sprintf("%08d", bookId) + "-" + strings.Replace(title, " ", "-", -1) + ".epub"
 }
 
 func GetChapterFilename(bookId int, chapterNo int) string {
@@ -71,6 +76,9 @@ func LoadConfig(filename string) {
 	}
 	if configuration.LibraryPath == "" {
 		panic("Missing config parameter: libraryPath")
+	}
+	if configuration.ServerBindPort == 0 {
+		panic("Missing config parameter: ServerBindPort")
 	}
 	if configuration.MaxActionBooks == 0 {
 		configuration.MaxActionBooks = 2
