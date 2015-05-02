@@ -18,17 +18,17 @@ func initTest(t *testing.T) {
 
 func xTestPersistence(t *testing.T) {
 	initTest(t)
-	initDB()
+	InitDB()
 	defer func() {
 		if err := recover(); err != nil {
-			closeDB()
+			CloseDB()
 			log.Printf("Recover from panic: %s\n", err)
 			trace := make([]byte, 1024)
 			count := runtime.Stack(trace, true)
 			log.Printf("Stack of %d bytes: %s\n", count, trace)
 		} else {
 			log.Println("Closing DB...")
-			closeDB()
+			CloseDB()
 		}
 
 	}()
@@ -70,30 +70,31 @@ func xTestPersistence(t *testing.T) {
 
 func xTestPageLoader(t *testing.T) {
 	initTest(t)
-	loader := PageLoader{}
-	data, err := loader.executeRequest("http://www.tangthuvien.vn/forum/showthread.php?t=93403&page=19")
+	url := "http://www.tangthuvien.vn/forum/showthread.php?t=93403&page=19"
+	site := GetBookSite(url)
+	data, err := site.ExecuteRequest(url)
 	if err != nil {
 		t.Error(err)
 	} else {
-		util.SaveFile("/home/dvan/vshared/dv/tusach/chapter1-raw.html", data)
+		util.SaveFile("/home/dvan/vshared/dv/tusach/chapter2-raw.html", data)
 	}
 }
 
 func TestEpub(t *testing.T) {
 	initTest(t)
 
-	initDB()
+	InitDB()
 
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("Recover from panic: %s\n", err)
-			closeDB()
+			CloseDB()
 			trace := make([]byte, 1024)
 			count := runtime.Stack(trace, true)
 			log.Printf("Stack of %d bytes: %s\n", count, trace)
 		} else {
 			log.Println("Closing DB...")
-			closeDB()
+			CloseDB()
 		}
 	}()
 
@@ -118,24 +119,26 @@ func TestEpub(t *testing.T) {
 func xTestBookMaker(t *testing.T) {
 	initTest(t)
 
-	initDB()
+	InitDB()
 
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("Recover from panic: %s\n", err)
-			closeDB()
+			CloseDB()
 			trace := make([]byte, 1024)
 			count := runtime.Stack(trace, true)
 			log.Printf("Stack of %d bytes: %s\n", count, trace)
 		} else {
 			log.Println("Closing DB...")
-			closeDB()
+			CloseDB()
 		}
 	}()
 
 	bookChannel := make(chan string)
 
-	newBook := Book{Title: "Bat Bai Chien Than", StartPageUrl: "http://www.tangthuvien.vn/forum/showthread.php?t=93403", MaxNumPages: 100}
+	//newBook := Book{Title: "Bat Bai Chien Than", StartPageUrl: "http://www.tangthuvien.vn/forum/showthread.php?t=93403", MaxNumPages: 1}
+	newBook := Book{Title: "Dai De Tinh Ha", StartPageUrl: "http://tunghoanh.com/dai-de-tinh-ha/chuong-1-yfTaaab.html", MaxNumPages: 1}
+
 	newBook.Status = STATUS_WORKING
 	bookId, err := SaveBook(newBook)
 	if err != nil {

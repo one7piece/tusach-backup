@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"dv.com.tusach/util"
 	"github.com/PuerkitoBio/goquery"
-	"golang.org/x/net/html"
+	//"golang.org/x/net/html"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -27,6 +27,7 @@ type User struct {
 var mymap map[string]User
 
 func TestGoQuery(t *testing.T) {
+	log.Printf("\nTestGoQuery...")
 	data, _ := ioutil.ReadFile("/home/dvan/vshared/dv/tusach/server/library/test.html")
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(data)))
 	if err != nil {
@@ -37,29 +38,25 @@ func TestGoQuery(t *testing.T) {
 	var buffer bytes.Buffer
 	doc.Find("div#chapter_content").Each(func(i int, s *goquery.Selection) {
 		html, _ := s.Html()
-		log.Printf("Found chapter content:\n%s\n", html)
-		s.Contents().FilterFunction(func(i int, s *goquery.Selection) {
-						
-		}).Each(func(i int, s *goquery.Selection) {
-			
+		log.Printf("\nFound chapter content:\n%s\n", html)
+
+		s.Find("p, br, span:not([style*=\"font-size: 0\"], [style*=\"font-size: 1.\"])").Each(func(i int, s *goquery.Selection) {
+			if len(s.Nodes) == 1 && len(s.Nodes[0].Attr) == 0 {
+				if s.Nodes[0].Data == "p" {
+					buffer.WriteString("<br/><br/>")
+				} else {
+					buffer.WriteString("<br/>")
+				}
+			} else {
+				//log.Printf("\nnode: ---'%s'---\n", s.Text())
+				buffer.WriteString(s.Text())
+			}
 		})
-				
-		
-		for _, node := range s.Nodes {
-			extractNodeText(node, buffer)
-		}
+		log.Printf("\nFound text:\n%s\n", buffer.String())
 	})
 }
 
-func extractNodeText(node *html.Node, buffer bytes.Buffer) {
-	if node.Type == 3 {
-		node.
-	} else {
-
-	}
-}
-
-func TestWalk(t *testing.T) {
+func xTestListDir(t *testing.T) {
 	names, err := util.ListDir("/home/dvan/vshared/dv", true)
 	if err != nil {
 		t.Error(err)
@@ -72,7 +69,7 @@ func TestWalk(t *testing.T) {
 	fmt.Printf("names-files-dirs: %v\n", names)
 }
 
-func TestFuncReturn(t *testing.T) {
+func xTestFuncReturn(t *testing.T) {
 	mymap = make(map[string]User)
 	mymap["dung"] = User{Name: "dung", Role: "admin"}
 
@@ -92,12 +89,12 @@ func getUser(name string) User {
 	return mymap[name]
 }
 
-func TestRegexp(t *testing.T) {
+func xTestRegexp(t *testing.T) {
 	//str := "aaaaa\n<dc:title>mytitle</dc:title>\nbbbbb"
 	//re := "<dc:title>*+</dc:title>"
 }
 
-func TestChannel2(t *testing.T) {
+func xTestChannel2(t *testing.T) {
 	c := make(chan string)
 	for i := 0; i < 5; i++ {
 		go func(i int) {

@@ -28,7 +28,7 @@ type BookSite struct {
 }
 
 type HttpService interface {
-	executeRequest(url string) []byte
+	ExecuteRequest(url string) []byte
 }
 
 func GetBookSite(url string) BookSite {
@@ -117,7 +117,7 @@ func CreateBook(eventChannel util.EventChannel, book Book, site BookSite) {
 
 		// load page
 		log.Println("Loading page: ", url)
-		rawHtml, err := site.executeRequest(url)
+		rawHtml, err := site.ExecuteRequest(url)
 		if err != nil {
 			errorMsg = "Failed to load from url: " + url + ". " + err.Error()
 			break
@@ -378,7 +378,7 @@ func parse(parser string, rawHtml []byte, chapter *Chapter) (string, error) {
 	return nextPageUrl, nil
 }
 
-func (site BookSite) executeRequest(url string) ([]byte, error) {
+func (site BookSite) ExecuteRequest(url string) ([]byte, error) {
 	var result []byte
 
 	var timeout time.Duration
