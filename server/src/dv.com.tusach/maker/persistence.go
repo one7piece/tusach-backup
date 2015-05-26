@@ -284,7 +284,7 @@ func LoadChapters(bookId int) ([]Chapter, error) {
 	for i := 0; i < len(records); i++ {
 		chapter := records[i].(Chapter)
 		chapters = append(chapters, chapter)
-		log.Printf("Found chapter: %+v\n", chapter)
+		//log.Printf("Found chapter: %+v\n", chapter)
 	}
 	if len(chapters) == 0 {
 		log.Printf("No chapter found\n")

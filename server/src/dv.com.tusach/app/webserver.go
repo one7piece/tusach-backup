@@ -265,7 +265,11 @@ func UpdateBook(w rest.ResponseWriter, r *rest.Request) {
 			_, err := maker.SaveBook(currentBook)
 			if err == nil {
 				// find parser
-				site := maker.GetBookSite(currentBook.CurrentPageUrl)
+				url := currentBook.CurrentPageUrl
+				if currentBook.CurrentPageNo <= 0 {
+					url = currentBook.StartPageUrl
+				}
+				site := maker.GetBookSite(url)
 				if site.Parser == "" {
 					err = errors.New("No parser found for url: " + currentBook.CurrentPageUrl)
 				} else {

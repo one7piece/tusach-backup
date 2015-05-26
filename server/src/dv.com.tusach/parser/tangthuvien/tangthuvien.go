@@ -98,31 +98,53 @@ func getChapterHtml(rawHtml string, chapterTitle *string) (string, error) {
 	title1 := ""
 	*chapterTitle = ""
 	var buffer bytes.Buffer
-	doc.Find(".content").Each(func(i int, s *goquery.Selection) {
+	doc.Find("div[id*=\"post_message_\"]").Each(func(i int, s *goquery.Selection) {
 		nodeHtml, err := s.Html()
 		if err == nil {
-			if strings.Index(nodeHtml, "post_message") != -1 {
-				buffer.WriteString("<br>")
-				nodeText := s.Text()
-				// replace \n with <br>
-				nodeText = strings.Replace(nodeText, "\n", "<br>", -1)
-				buffer.WriteString(nodeText)
-				buffer.WriteString("<br><br><br>")
-				// add new page
-
-				str := parser.GetChapterTitle(nodeHtml)
-				if str != "" {
-					if title1 == "" {
-						title1 = str
-						*chapterTitle = title1
-					} else {
-						*chapterTitle = title1 + "/" + str
-					}
+			buffer.WriteString("<br>")
+			nodeText := s.Text()
+			// replace \n with <br>
+			nodeText = strings.Replace(nodeText, "\n", "<br>", -1)
+			buffer.WriteString(nodeText)
+			buffer.WriteString("<br><br><br>")
+			// add new page
+			str := parser.GetChapterTitle(nodeHtml)
+			if str != "" {
+				if title1 == "" {
+					title1 = str
+					*chapterTitle = title1
+				} else {
+					*chapterTitle = title1 + "/" + str
 				}
 			}
 		}
 	})
+	/*
+		doc.Find(".content").Each(func(i int, s *goquery.Selection) {
+			nodeHtml, err := s.Html()
+			if err == nil {
+				if strings.Index(nodeHtml, "post_message") != -1 {
+					buffer.WriteString("<br>")
+					nodeText := s.Text()
+					// replace \n with <br>
+					nodeText = strings.Replace(nodeText, "\n", "<br>", -1)
+					buffer.WriteString(nodeText)
+					buffer.WriteString("<br><br><br>")
+					// add new page
 
+					str := parser.GetChapterTitle(nodeHtml)
+					if str != "" {
+						if title1 == "" {
+							title1 = str
+							*chapterTitle = title1
+						} else {
+							*chapterTitle = title1 + "/" + str
+						}
+					}
+				}
+			}
+		})
+	*/
 	chapterHtml := ""
 	textStr := buffer.String()
 	if textStr != "" {

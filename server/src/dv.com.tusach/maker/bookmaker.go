@@ -33,6 +33,10 @@ type HttpService interface {
 
 func GetBookSite(url string) BookSite {
 	site := BookSite{}
+	if url == "" {
+		log.Println("Parameter url is empty")
+		return site
+	}
 	// get list of parsers
 	names, err := util.ListDir(util.GetParserPath(), true)
 	if err != nil {
@@ -46,13 +50,13 @@ func GetBookSite(url string) BookSite {
 			"-configFile="+util.GetConfigFile(), "-op=v",
 			"-url="+url)
 		out, err := cmd.CombinedOutput()
+		str := string(out)
+		log.Println("validate command output: ", str)
 		if err != nil {
 			log.Println("Error validating url. " + err.Error())
 			return site
 		}
 
-		str := string(out)
-		log.Println("validate command output: ", str)
 		lines := strings.Split(str, "\n")
 		var m map[string]string
 		for _, line := range lines {
@@ -132,7 +136,11 @@ func CreateBook(eventChannel util.EventChannel, book Book, site BookSite) {
 		nextPageUrl, err := parse(site.Parser, rawHtml, &newChapter)
 		if err != nil {
 			errorMsg = err.Error()
+			log.Println("Error parsing chapter. " + errorMsg)
 			break
+		}
+		if newChapter.Title == "" {
+			newChapter.Title = "Chapter " + strconv.Itoa(newChapter.ChapterNo)
 		}
 		log.Printf("completed chapter: %d:%s, nextPageUrl:%s\n", newChapter.ChapterNo, newChapter.Title, nextPageUrl)
 
@@ -140,6 +148,7 @@ func CreateBook(eventChannel util.EventChannel, book Book, site BookSite) {
 		err = SaveChapter(newChapter)
 		if err != nil {
 			errorMsg = err.Error()
+			log.Println("Error saving chapter. " + errorMsg)
 			break
 		}
 		book.CurrentPageNo = newChapterNo
@@ -158,7 +167,6 @@ func CreateBook(eventChannel util.EventChannel, book Book, site BookSite) {
 			}
 		}
 
-		// save the chapter
 		if nextPageUrl == url {
 			log.Println("Internal error. next page url is same as current page url: ", url)
 			break
@@ -347,7 +355,7 @@ func parse(parser string, rawHtml []byte, chapter *Chapter) (string, error) {
 
 	// call parser to parse chapter html
 	log.Println("executing parser command: ", parser)
-	cmd := exec.Command(util.GetParserPath()+"/"+parser+"/"+parser,
+	cmd := exec.Command(util.GetParserPath()+"/"+parser,
 		"-configFile="+util.GetConfigFile(), "-op=p",
 		"-inputFile="+rawFilename, "-outputFile="+filename)
 	out, err := cmd.CombinedOutput()
@@ -362,8 +370,8 @@ func parse(parser string, rawHtml []byte, chapter *Chapter) (string, error) {
 	lines := strings.Split(str, "\n")
 	var m map[string]string
 	for _, line := range lines {
-		if strings.HasPrefix(line, "parser-output") {
-			json.Unmarshal([]byte(line[len("parser-output"):]), &m)
+		if strings.HasPrefix(line, "parser-output:") {
+			json.Unmarshal([]byte(line[len("parser-output:"):]), &m)
 			break
 		}
 	}

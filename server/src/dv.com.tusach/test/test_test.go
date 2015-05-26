@@ -10,6 +10,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	//"golang.org/x/net/html"
 	"io/ioutil"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ type User struct {
 
 var mymap map[string]User
 
-func TestGoQuery(t *testing.T) {
+func xTestGoQuery(t *testing.T) {
 	log.Printf("\nTestGoQuery...")
 	data, _ := ioutil.ReadFile("/home/dvan/vshared/dv/tusach/server/library/test.html")
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(data)))
@@ -54,6 +55,40 @@ func TestGoQuery(t *testing.T) {
 		})
 		log.Printf("\nFound text:\n%s\n", buffer.String())
 	})
+}
+
+func TestRegexp(t *testing.T) {
+	data, err := ioutil.ReadFile("/home/dvan/vshared/dv/thanh-guom-ho-phach.htm")
+	if err != nil {
+		t.Error(err)
+	}
+	//s := string(data)
+	re, _ := regexp.Compile("Chương và tiết mục lục")
+	arr2d := re.FindAllIndex(data, -1)
+	var buf bytes.Buffer
+	index := 0
+	for i := 0; i < len(arr2d); i++ {
+		arr := arr2d[i]
+		fmt.Printf("found: '%s' at %d-%d\n", string(data[arr[0]:arr[1]]), arr[0], arr[1])
+		offset := arr[0] - 100
+		s1 := string(data[offset:arr[0]])
+		if strings.LastIndex(s1, "<h1>") == -1 {
+			startIndex := strings.LastIndex(s1, "<p ")
+			s2 := string(data[arr[0] : arr[0]+100])
+			endIndex := strings.Index(s2, "</p>")
+
+			buf.Write(data[index : offset+startIndex])
+			buf.WriteString("<h1>")
+			buf.Write(data[arr[0] : arr[0]+strings.Index(s2, "<")])
+			buf.WriteString("</h1>")
+			index = arr[0] + endIndex + len("</p>")
+			fmt.Printf("startIndex:%d, new index:%d\n", offset+startIndex, index)
+			if i > 10 {
+				break
+			}
+		}
+	}
+	util.SaveFile("/home/dvan/vshared/dv/thanh-guom-ho-phach-updated.htm", buf.Bytes())
 }
 
 func xTestListDir(t *testing.T) {
@@ -87,11 +122,6 @@ func xTestFuncReturn(t *testing.T) {
 
 func getUser(name string) User {
 	return mymap[name]
-}
-
-func xTestRegexp(t *testing.T) {
-	//str := "aaaaa\n<dc:title>mytitle</dc:title>\nbbbbb"
-	//re := "<dc:title>*+</dc:title>"
 }
 
 func xTestChannel2(t *testing.T) {

@@ -16,7 +16,7 @@ func ExtractError(err interface{}) error {
 	case error:
 		return x
 	default:
-		return errors.New("Unknow error")
+		return errors.New("Unknown error")
 	}
 }
 

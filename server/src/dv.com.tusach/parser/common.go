@@ -3,7 +3,7 @@ package parser
 import (
 	"errors"
 	"flag"
-	"fmt"
+	//"fmt"
 	"regexp"
 	"strings"
 )
@@ -73,6 +73,6 @@ func findChapterTitle(html string, restr string) string {
 			}
 		}
 	}
-	fmt.Println("Found chapter title: ", title)
+	//fmt.Println("Found chapter title: ", title)
 	return title
 }
