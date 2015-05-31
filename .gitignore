@@ -1,4 +1,4 @@
-#server/pkg/*
+server/pkg/*
 server/library/books
 server/library/parser
 client/GTusach/gwt-unitCache
